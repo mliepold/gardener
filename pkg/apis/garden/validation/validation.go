@@ -24,6 +24,7 @@ import (
 	"github.com/gardener/gardener/pkg/apis/garden"
 	"github.com/gardener/gardener/pkg/apis/garden/helper"
 	"github.com/gardener/gardener/pkg/utils"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	apivalidation "k8s.io/apimachinery/pkg/api/validation"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -393,6 +394,8 @@ func ValidateQuota(quota *garden.Quota) field.ErrorList {
 // ValidateQuotaUpdate validates a Quota object before an update.
 func ValidateQuotaUpdate(newQuota, oldQuota *garden.Quota) field.ErrorList {
 	allErrs := apivalidation.ValidateObjectMetaUpdate(&newQuota.ObjectMeta, &oldQuota.ObjectMeta, field.NewPath("metadata"))
+	// scope is immutable
+	allErrs = append(allErrs, apivalidation.ValidateImmutableField(&newQuota.Spec.Scope, &oldQuota.Spec.Scope, field.NewPath("spec").Child("scope"))...)
 	allErrs = append(allErrs, ValidateQuota(newQuota)...)
 	return allErrs
 }
@@ -416,10 +419,28 @@ func ValidateQuotaSpec(quotaSpec *garden.QuotaSpec, fldPath *field.Path) field.E
 	metricsFldPath := fldPath.Child("metrics")
 	for k, v := range quotaSpec.Metrics {
 		keyPath := metricsFldPath.Key(string(k))
+		if !isValidQuotaMetric(corev1.ResourceName(k)) {
+			allErrs = append(allErrs, field.Invalid(keyPath, v.String(), fmt.Sprintf("%s is no supported quota metric", string(k))))
+		}
 		allErrs = append(allErrs, validateResourceQuantityValue(string(k), v, keyPath)...)
 	}
 
 	return allErrs
+}
+
+func isValidQuotaMetric(metric corev1.ResourceName) bool {
+	switch metric {
+	case
+		garden.QuotaMetricCPU,
+		garden.QuotaMetricGPU,
+		garden.QuotaMetricMemory,
+		garden.QuotaMetricStorageBasic,
+		garden.QuotaMetricStorageStandard,
+		garden.QuotaMetricStoragePremium,
+		garden.QuotaMetricLoadbalancer:
+		return true
+	}
+	return false
 }
 
 // validateResourceQuantityValue validates the value of a resource quantity.

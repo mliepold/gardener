@@ -1127,7 +1127,7 @@ var _ = Describe("validation", func() {
 				Spec: garden.QuotaSpec{
 					Scope: garden.QuotaScopeProject,
 					Metrics: corev1.ResourceList{
-						"cpus":   resource.MustParse("200"),
+						"cpu":    resource.MustParse("200"),
 						"memory": resource.MustParse("4000Gi"),
 					},
 				},
@@ -1147,7 +1147,7 @@ var _ = Describe("validation", func() {
 
 			errorList := ValidateQuota(quota)
 
-			Expect(len(errorList)).To(Equal(4))
+			Expect(len(errorList)).To(Equal(5))
 			Expect(*errorList[0]).To(MatchFields(IgnoreExtras, Fields{
 				"Type":  Equal(field.ErrorTypeRequired),
 				"Field": Equal("metadata.name"),
@@ -1161,6 +1161,10 @@ var _ = Describe("validation", func() {
 				"Field": Equal("spec.scope"),
 			}))
 			Expect(*errorList[3]).To(MatchFields(IgnoreExtras, Fields{
+				"Type":  Equal(field.ErrorTypeInvalid),
+				"Field": Equal("spec.metrics[key]"),
+			}))
+			Expect(*errorList[4]).To(MatchFields(IgnoreExtras, Fields{
 				"Type":  Equal(field.ErrorTypeInvalid),
 				"Field": Equal("spec.metrics[key]"),
 			}))
