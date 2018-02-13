@@ -394,7 +394,6 @@ func ValidateQuota(quota *garden.Quota) field.ErrorList {
 // ValidateQuotaUpdate validates a Quota object before an update.
 func ValidateQuotaUpdate(newQuota, oldQuota *garden.Quota) field.ErrorList {
 	allErrs := apivalidation.ValidateObjectMetaUpdate(&newQuota.ObjectMeta, &oldQuota.ObjectMeta, field.NewPath("metadata"))
-	// scope is immutable
 	allErrs = append(allErrs, apivalidation.ValidateImmutableField(&newQuota.Spec.Scope, &oldQuota.Spec.Scope, field.NewPath("spec").Child("scope"))...)
 	allErrs = append(allErrs, ValidateQuota(newQuota)...)
 	return allErrs
@@ -434,7 +433,6 @@ func isValidQuotaMetric(metric corev1.ResourceName) bool {
 		garden.QuotaMetricCPU,
 		garden.QuotaMetricGPU,
 		garden.QuotaMetricMemory,
-		garden.QuotaMetricStorageBasic,
 		garden.QuotaMetricStorageStandard,
 		garden.QuotaMetricStoragePremium,
 		garden.QuotaMetricLoadbalancer:
